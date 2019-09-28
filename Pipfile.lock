@@ -1,0 +1,48 @@
+{
+    "_meta": {
+        "hash": {
+            "sha256": "993c43c503c6303350d1c9e173b5a3d10b6885fc900cacd6f93ec23a93b28777"
+        },
+        "pipfile-spec": 6,
+        "requires": {
+            "python_version": "3.7"
+        },
+        "sources": [
+            {
+                "name": "pypi",
+                "url": "https://pypi.org/simple",
+                "verify_ssl": true
+            }
+        ]
+    },
+    "default": {
+        "click": {
+            "hashes": [
+                "sha256:2335065e6395b9e67ca716de5f7526736bfa6ceead690adf616d925bdc622b13",
+                "sha256:5b94b49521f6456670fdb30cd82a4eca9412788a93fa6dd6df72c94d5a8ff2d7"
+            ],
+            "index": "pypi",
+            "version": "==7.0"
+        },
+        "click-log": {
+            "hashes": [
+                "sha256:16fd1ca3fc6b16c98cea63acf1ab474ea8e676849dc669d86afafb0ed7003124",
+                "sha256:eee14dc37cdf3072158570f00406572f9e03e414accdccfccd4c538df9ae322c"
+            ],
+            "index": "pypi",
+            "version": "==0.3.2"
+        },
+        "ofxfix": {
+            "editable": true,
+            "path": "."
+        },
+        "ofxtools": {
+            "hashes": [
+                "sha256:87245679911c0c12429a476fd269611512d3e4b44cb8871159bb76ba70f8a46f"
+            ],
+            "index": "pypi",
+            "version": "==0.8.20"
+        }
+    },
+    "develop": {}
+}
