@@ -38,10 +38,11 @@
         },
         "ofxtools": {
             "hashes": [
-                "sha256:87245679911c0c12429a476fd269611512d3e4b44cb8871159bb76ba70f8a46f"
+                "sha256:682a516bfa5ccad0f9551c17cc2cf155422f9f5f85a341cfb4911b324de46045"
             ],
             "index": "pypi",
-            "version": "==0.8.20"
+            "markers": "python_version >= '3.8'",
+            "version": "==0.9.5"
         }
     },
     "develop": {}
