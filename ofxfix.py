@@ -28,60 +28,12 @@ exclude_patterns = {
 }
 
 exclude_keywords = [
-  'NE', 'AZ', 'PMT', 'PYMNTS', 'ONLINE', 'UTIL', 'BILL', 'COT',
-  'NM', 'ALBUQUERQUE', 'OMAHA', 'LINCOLN', 'KEARNEY', 'HOLDREGE',
+  'PMT', 'PYMNTS', 'ONLINE', 'UTIL', 'BILL',
+  'MN', 'MINNEAPOLIS',
+  'TST*'
 ]
 
 minlength = 2
-
-@click.command()
-@click_log.simple_verbosity_option(log)
-@click.argument('input',
-                required=True,
-                type=click.Path(exists=True,
-                                dir_okay=False,
-                                readable=True,
-                                resolve_path=True))
-@click.option('--patterns/--no-patterns', default=True,
-              help="Enable/disable regexp-based pattern exclusion")
-@click.option('--keywords/--no-keywords', default=True,
-              help="Enable/disable keyword-based pattern exclusion")
-@click.option('--silent', is_flag=True,
-              help="Disable all output to stdout (for scripting)")
-
-def cli(input, patterns=True, keywords=True, silent=False):
-  if silent:
-    while log.hasHandlers():
-      log.removeHandler(log.handlers[0])
-    log.addHandler(logging.NullHandler())
-
-  filename = click.format_filename(input)
-  log.info("Preparing to parse and fix {}".format(filename))
-
-  parser = OFXTree()
-  parser.parse(filename)
-
-  for e in parser.getroot().findall(".//STMTTRN"):
-    node_name = e.find('./NAME')
-    node_memo = e.find('./MEMO')
-
-    node_dtposted = e.find('./DTPOSTED')
-    node_dtposted.text = fix_date(node_dtposted.text, node_memo.text)
-
-    filter_functions = []
-    filter_functions.append(filter_minlength)
-    if keywords: filter_functions.append(filter_keywords)
-    if patterns: filter_functions.append(filter_patterns)
-
-    node_name.text = fix_text(node_memo.text, filter_functions)
-
-  parser.write(sys.stdout, encoding="unicode")
-
-def __main__():
-  cli()
-
-if __name__ == '__main__':
-  cli()
 
 def fix_date(olddate, memo):
   match = re.findall(dt_pattern, memo)
@@ -146,3 +98,56 @@ def filter_keywords(p):
   else:
     log.debug("Running filter_keywords on {}... ok".format(p))
     return True
+
+@click.command()
+@click_log.simple_verbosity_option(log)
+@click.argument('input',
+                required=True,
+                type=click.Path(exists=True,
+                                dir_okay=False,
+                                readable=True,
+                                resolve_path=True))
+@click.option('--patterns/--no-patterns', default=True,
+              help="Enable/disable regexp-based pattern exclusion")
+@click.option('--keywords/--no-keywords', default=True,
+              help="Enable/disable keyword-based pattern exclusion")
+@click.option('--silent', is_flag=True,
+              help="Disable all output to stdout (for scripting)")
+def cli(input, patterns=True, keywords=True, silent=False):
+  if silent:
+    while log.hasHandlers():
+      log.removeHandler(log.handlers[0])
+    log.addHandler(logging.NullHandler())
+
+  filename = click.format_filename(input)
+  log.info("Preparing to parse and fix {}".format(filename))
+
+  parser = OFXTree()
+  parser.parse(filename)
+
+  for e in parser.getroot().findall(".//STMTTRN"):
+    node_name = e.find('./NAME')
+    node_memo = e.find('./MEMO')
+
+    filter_functions = []
+    filter_functions.append(filter_minlength)
+    if keywords: filter_functions.append(filter_keywords)
+    if patterns: filter_functions.append(filter_patterns)
+
+    if node_name != None:
+        node_name.text = fix_text(node_name.text, filter_functions)
+    
+    if node_memo != None:
+        node_memo.text = fix_text(node_memo.text, filter_functions)
+        # Gnucash renders empty tags as "<", so if memo text is empty, remove it. 
+        if node_memo.text == '':
+            e.remove(node_memo)
+
+  parser.write(sys.stdout, encoding="unicode")
+
+def __main__():
+  cli()
+
+if __name__ == '__main__':
+  cli()
+
