@@ -30,3 +30,6 @@ Requires python >= 3.6.
     pipenv shell
     (ofxfix) % python3 ofxfix.py
     ```
+# Logging
+
+Use flag `-v DEBUG` to see debug logging.

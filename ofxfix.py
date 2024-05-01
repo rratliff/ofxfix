@@ -29,8 +29,8 @@ exclude_patterns = {
 
 exclude_keywords = [
   'PMT', 'PYMNTS', 'ONLINE', 'UTIL', 'BILL',
-  'MN', 'MINNEAPOLIS',
-  'TST*'
+  'MN', 'MINNEAPOLIS', 'BLOOMINGTON', 'RICHFIELD',
+  'TST*', 'DOWNTOWN'
 ]
 
 minlength = 2
@@ -45,13 +45,28 @@ def fix_date(olddate, memo):
 
 def fix_text(oldtext, filter_functions):
   newtext = oldtext
-
-  # Strip off debit stuff
-  if len(newtext) > 35 and newtext[0:2] == 'XX' and newtext[34] == ' ':
-    newtext = newtext[35:]
-
+  
+  log.debug("Before {}".format(newtext))
+  
+  # Amazon order number
+  newtext = re.sub("\*\w{9}( SEATTLE)?$", '', newtext)
+  # Square
+  newtext = re.sub("^SQ \*", '', newtext)
+  # Toast
+  newtext = re.sub("^TST\* ", '', newtext)
+  # AMAZON
+  newtext = re.sub("AMZN MKTP US", "AMAZON", newtext, flags=re.IGNORECASE)
+  # Prime Video
+  newtext = re.sub("PRIME VIDEO \*\w{9} SEATTLE", "Prime Video", newtext)
+  # Google Fi
+  newtext = re.sub("\*FI \w{6}", "Fi", newtext)
+  # Whole Foods
+  newtext = re.sub("WHOLEFDS", "Whole Foods", newtext)
+  # Patreon
+  newtext = re.sub("Patreon\* Membership Internet CA", "Patreon", newtext)
+  
   pieces = re.split('\s', newtext)
-  log.debug("Parsing: {}".format(pieces))
+  #log.debug("Parsing: {}".format(pieces))
   if pieces:
     newp = []
     for p in pieces[::-1]:
@@ -61,42 +76,52 @@ def fix_text(oldtext, filter_functions):
           passes = False
           break
       if passes:
-        log.debug("Keeping chunk: {}".format(p))
+        #log.debug("Keeping chunk: {}".format(p))
         newp.append(p)
       else:
-        log.debug("Rejecting chunk: {}".format(p))
+        pass
+        #log.debug("Rejecting chunk: {}".format(p))
 
     newp.reverse()
-    log.debug("Final list for the item: {}".format(newp))
+    #log.debug("Final list for the item: {}".format(newp))
     newtext = " ".join(newp)
 
-  log.debug("Final string: {}".format(newtext))
+  log.debug("Keyword{}".format(newtext))
+  
+  newtext = re.sub("&amp;amp;amp;", "&amp;", newtext)
+
+  newtext = newtext.title()
+  
+  newtext = re.sub("&Amp;", "&amp;", newtext)
+  newtext = re.sub("Rei", "REI", newtext)
+  log.debug("After  {}".format(newtext))
+  
   return newtext
 
 def filter_patterns(p):
-  log.debug("Running filter_patterns on {}...".format(p))
+  #log.debug("Running filter_patterns on {}...".format(p))
   for name, pattern in exclude_patterns.items():
-    log.debug("\tRunning pattern {}".format(name))
+    #log.debug("\tRunning pattern {}".format(name))
 
     if re.match(pattern, p):
-      log.debug("\tDiscarded {}: Matches pattern {}.".format(p, name))
+      #log.debug("\tDiscarded {}: Matches pattern {}.".format(p, name))
       return False
   return True
 
 def filter_minlength(p):
   if len(p) < minlength:
-    log.debug("Running filter_minlength on {}... FAIL: Length {} < minlength {}.".format(p, len(p), minlength))
+    #log.debug("Running filter_minlength on {}... FAIL: Length {} < minlength {}.".format(p, len(p), minlength))
     return False
   else:
-    log.debug("Running filter_minlength on {}... ok".format(p))
+    #log.debug("Running filter_minlength on {}... ok".format(p))
     return True
 
 def filter_keywords(p):
   if p in exclude_keywords:
-    log.debug("Running filter_keywords on {}... FAIL: Matches an excluded keyword.".format(p))
+    #log.debug("Running filter_keywords on {}... FAIL: Matches an excluded keyword.".format(p))
     return False
   else:
-    log.debug("Running filter_keywords on {}... ok".format(p))
+    #log.debug("Running filter_keywords on {}... ok".format(p))
     return True
 
 @click.command()
@@ -128,9 +153,13 @@ def cli(input, patterns=True, keywords=True, silent=False):
   for e in parser.getroot().findall(".//STMTTRN"):
     node_name = e.find('./NAME')
     node_memo = e.find('./MEMO')
+    
+    node_dtposted = e.find('./DTPOSTED')
+    log.debug("Date {}".format(node_dtposted.text))
+    #node_dtposted.text = fix_date(node_dtposted.text, node_memo.text)
 
     filter_functions = []
-    filter_functions.append(filter_minlength)
+    # filter_functions.append(filter_minlength)
     if keywords: filter_functions.append(filter_keywords)
     if patterns: filter_functions.append(filter_patterns)
 
@@ -138,10 +167,8 @@ def cli(input, patterns=True, keywords=True, silent=False):
         node_name.text = fix_text(node_name.text, filter_functions)
     
     if node_memo != None:
-        node_memo.text = fix_text(node_memo.text, filter_functions)
-        # Gnucash renders empty tags as "<", so if memo text is empty, remove it. 
-        if node_memo.text == '':
-            e.remove(node_memo)
+        # Just remove the Memo field. We don't care.
+        e.remove(node_memo)
 
   parser.write(sys.stdout, encoding="unicode")
 
